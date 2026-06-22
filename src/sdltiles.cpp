@@ -33,6 +33,10 @@
 #endif
 #endif
 
+#if defined(CDDA_3D)
+#include "render3d/render3d.h"
+#endif
+
 #include "avatar.h"
 #include "cached_options.h"
 #include "cata_assert.h"
@@ -135,6 +139,11 @@ static SDL_Window_Ptr window;
 static SDL_Renderer_Ptr renderer;
 static SDL_PixelFormat_Ptr format;
 static SDL_Texture_Ptr display_buffer;
+#if defined(CDDA_3D)
+// Map-viewport rectangle (window pixels, top-left origin), captured each time the
+// tiles are drawn so the cdda-3d overlay knows where to render.
+static SDL_Rect cdda3d_viewport_rect{ 0, 0, 0, 0 };
+#endif
 static GeometryRenderer_Ptr geometry;
 #if defined(__ANDROID__)
 static SDL_Texture_Ptr touch_joystick;
@@ -314,6 +323,11 @@ static void WinCreate()
 #endif
 #endif
 
+#if defined(CDDA_3D)
+    // cdda-3d issues raw OpenGL into the renderer's context, so the window must
+    // be created GL-capable.
+    window_flags |= SDL_WINDOW_OPENGL;
+#endif
     ::window.reset( SDL_CreateWindow( "",
                                       SDL_WINDOWPOS_CENTERED_DISPLAY( display ),
                                       SDL_WINDOWPOS_CENTERED_DISPLAY( display ),
@@ -348,6 +362,12 @@ static void WinCreate()
     } else {
         renderer_name = get_option<std::string>( "RENDERER" );
     }
+
+#if defined(CDDA_3D)
+    // cdda-3d requires an OpenGL-backed renderer so we can interleave our own GL.
+    renderer_name = "opengl";
+    software_renderer = false;
+#endif
 
     if( renderer_name == "direct3d" ) {
         direct3d_mode = true;
@@ -439,6 +459,10 @@ static void WinCreate()
     }
 
     imclient = std::make_unique<cataimgui::client>( renderer, window, geometry );
+
+#if defined(CDDA_3D)
+    cdda3d::init();
+#endif
 }
 
 static void WinDestroy()
@@ -452,6 +476,9 @@ static void WinDestroy()
     gamepad::quit();
     geometry.reset();
     format.reset();
+#if defined(CDDA_3D)
+    cdda3d::shutdown();
+#endif
     display_buffer.reset();
     renderer.reset();
     ::window.reset();
@@ -563,6 +590,16 @@ void refresh_display()
         draw_quick_shortcuts();
     }
     draw_virtual_joystick();
+#endif
+#if defined(CDDA_3D)
+    // Composite the cdda-3d map view under the 2D UI: SDL's 2D batch is on the
+    // window framebuffer now; flush it, then draw our GL into the map rectangle.
+    if( cdda3d::active() && cdda3d_viewport_rect.w > 0 && cdda3d_viewport_rect.h > 0 ) {
+        SDL_RenderFlush( renderer.get() );
+        cdda3d::render_map_viewport( cdda3d_viewport_rect.x, cdda3d_viewport_rect.y,
+                                     cdda3d_viewport_rect.w, cdda3d_viewport_rect.h,
+                                     WindowWidth, WindowHeight );
+    }
 #endif
     SDL_RenderPresent( renderer.get() );
     SetRenderTarget( renderer, display_buffer );
@@ -1381,6 +1418,12 @@ void cata_cursesport::curses_drawwindow( const catacurses::window &w )
             TERRAIN_WINDOW_TERM_HEIGHT * font->height,
             overlay_strings,
             color_blocks );
+
+#if defined(CDDA_3D)
+        cdda3d_viewport_rect = SDL_Rect{ win->pos.x * fontwidth, win->pos.y * fontheight,
+                                         TERRAIN_WINDOW_TERM_WIDTH * font->width,
+                                         TERRAIN_WINDOW_TERM_HEIGHT * font->height };
+#endif
 
         // color blocks overlay
         if( !color_blocks.second.empty() ) {

@@ -175,6 +175,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\*.cpp" Exclude="..\src\main.cpp;..\src\messages.cpp" />
+    <!-- cdda-3d: experimental 3D renderer layer (subdir not covered by the glob above) -->
+    <ClCompile Include="..\src\render3d\*.cpp" />
+    <!-- cdda-3d: glad GL loader (C source; must not use the C++ precompiled header) -->
+    <ClCompile Include="..\src\third-party\glad\glad.c">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <ForcedIncludeFiles />
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="flatbuffers.vcxproj">
