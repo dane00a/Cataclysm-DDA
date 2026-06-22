@@ -150,6 +150,16 @@ class texture
             return SDL_RenderCopyEx( renderer.get(), sdl_texture_ptr.get(), &srcrect, dstrect, angle, center,
                                      flip );
         }
+#if defined(CDDA_3D)
+        // cdda-3d: expose the underlying atlas texture + source rect so the 3D
+        // renderer can bind the sprite via SDL_GL_BindTexture and compute UVs.
+        SDL_Texture *cdda3d_sdl_texture() const {
+            return sdl_texture_ptr.get();
+        }
+        const SDL_Rect &cdda3d_srcrect() const {
+            return srcrect;
+        }
+#endif
 };
 
 /**
@@ -749,6 +759,15 @@ class cata_tiles
         int get_tile_width() const {
             return tile_width;
         }
+#if defined(CDDA_3D)
+        // cdda-3d: resolve a tile id+category to its base foreground sprite,
+        // reusing the normal looks_like/season lookup. Returns false if there is
+        // no sprite; otherwise out_tex/out_src describe the atlas SDL_Texture and
+        // the sprite's source rectangle within it.
+        bool cdda3d_lookup_sprite( const std::string &id, TILE_CATEGORY category, lit_level ll,
+                                   unsigned int loc_rand, SDL_Texture *&out_tex,
+                                   SDL_Rect &out_src ) const;
+#endif
         half_open_rectangle<point> get_max_tile_extent() const {
             return max_tile_extent;
         }

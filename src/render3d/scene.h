@@ -5,16 +5,25 @@
 #include <vector>
 
 // Builds the per-frame 3D geometry for the cdda-3d renderer by querying live
-// game state (map, avatar, visibility). Phase 2: a flat ground grid of the
-// visible cells, colored by terrain + lighting.
+// game state (map, avatar, visibility) and resolving each visible cell to its
+// terrain sprite via the tileset. Phase 3: textured ground cells.
 
 namespace cdda3d
 {
 
-// Fill `out` with interleaved vertices (position.xyz, color.rgb) of the visible
-// ground cells. Coordinates are player-relative, so the camera always looks at
-// the world origin (0,0,0). Each cell is a 1x1 quad on the ground plane (y = 0).
-void build_ground_mesh( std::vector<float> &out );
+// One visible ground cell with its resolved terrain sprite.
+struct CellSprite {
+    float wx = 0.0f;        // world position (player-relative), X = east
+    float wz = 0.0f;        // world position (player-relative), Z = south
+    void *atlas = nullptr;  // SDL_Texture* of the sprite's atlas page (opaque here)
+    int sx = 0, sy = 0, sw = 0, sh = 0; // source rect within the atlas (pixels)
+    float bright = 1.0f;    // brightness tint from lighting/visibility
+};
+
+// Gather visible ground cells with their resolved terrain sprite. Cells with no
+// sprite (or never seen) are skipped. Player-relative coords -> camera looks at
+// the world origin.
+void build_ground_sprites( std::vector<CellSprite> &out );
 
 } // namespace cdda3d
 

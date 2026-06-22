@@ -2968,6 +2968,44 @@ bool cata_tiles::draw_from_id_string_internal( const std::string &id, TILE_CATEG
     return true;
 }
 
+#if defined(CDDA_3D)
+bool cata_tiles::cdda3d_lookup_sprite( const std::string &id, TILE_CATEGORY category, lit_level ll,
+                                       unsigned int loc_rand, SDL_Texture *&out_tex,
+                                       SDL_Rect &out_src ) const
+{
+    if( !tileset_ptr ) {
+        return false;
+    }
+    const std::optional<tile_lookup_res> res = find_tile_looks_like( id, category, std::string() );
+    if( !res ) {
+        return false;
+    }
+    // tile_lookup_res::tile() is non-const; we only read from it.
+    const tile_type &tt = const_cast<tile_lookup_res &>( *res ).tile();
+    const std::vector<int> *picked = tt.fg.pick( loc_rand );
+    if( !picked || picked->empty() ) {
+        return false;
+    }
+    const int sprite_index = ( *picked )[0];
+    const texture *tex = tileset_ptr->get_tile( sprite_index );
+    if( ll == lit_level::MEMORIZED ) {
+        if( const texture *m = tileset_ptr->get_memory_tile( sprite_index ) ) {
+            tex = m;
+        }
+    }
+    if( !tex ) {
+        return false;
+    }
+    SDL_Texture *const sdl = tex->cdda3d_sdl_texture();
+    if( !sdl ) {
+        return false;
+    }
+    out_tex = sdl;
+    out_src = tex->cdda3d_srcrect();
+    return true;
+}
+#endif // CDDA_3D
+
 bool cata_tiles::draw_sprite_at(
     const tile_type &tile, const weighted_int_list<std::vector<int>> &svlist,
     const point &p, unsigned int loc_rand, bool rota_fg, int rota, lit_level ll,

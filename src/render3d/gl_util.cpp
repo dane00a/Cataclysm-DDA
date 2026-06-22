@@ -69,12 +69,15 @@ void Mesh::ensure()
     glGenBuffers( 1, &vbo );
     glBindVertexArray( vao );
     glBindBuffer( GL_ARRAY_BUFFER, vbo );
-    constexpr GLsizei stride = 6 * sizeof( float );
-    glEnableVertexAttribArray( 0 );
+    constexpr GLsizei stride = 8 * sizeof( float );
+    glEnableVertexAttribArray( 0 ); // position (vec3)
     glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void *>( 0 ) );
-    glEnableVertexAttribArray( 1 );
-    glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE, stride,
+    glEnableVertexAttribArray( 1 ); // uv (vec2)
+    glVertexAttribPointer( 1, 2, GL_FLOAT, GL_FALSE, stride,
                            reinterpret_cast<void *>( 3 * sizeof( float ) ) );
+    glEnableVertexAttribArray( 2 ); // tint (vec3)
+    glVertexAttribPointer( 2, 3, GL_FLOAT, GL_FALSE, stride,
+                           reinterpret_cast<void *>( 5 * sizeof( float ) ) );
     glBindVertexArray( 0 );
 }
 
@@ -86,7 +89,7 @@ void Mesh::upload( const std::vector<float> &verts )
     glBufferData( GL_ARRAY_BUFFER, static_cast<GLsizeiptr>( verts.size() * sizeof( float ) ),
                   verts.data(), GL_DYNAMIC_DRAW );
     glBindVertexArray( 0 );
-    vertex_count = static_cast<GLsizei>( verts.size() / 6 );
+    vertex_count = static_cast<GLsizei>( verts.size() / 8 );
 }
 
 void Mesh::draw() const
