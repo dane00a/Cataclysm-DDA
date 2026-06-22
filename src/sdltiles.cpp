@@ -3110,6 +3110,14 @@ static void CheckMessages()
                 }
 #endif
                 is_repeat = ev.key.repeat;
+#if defined(CDDA_3D)
+                // cdda-3d: F10 toggles the 3D map overlay on/off (lets us compare
+                // the 3D view against the untouched 2D renderer at runtime).
+                if( ev.key.keysym.sym == SDLK_F10 && !ev.key.repeat ) {
+                    cdda3d::toggle();
+                    break;
+                }
+#endif
                 //hide mouse cursor on keyboard input
                 if( get_option<std::string>( "HIDE_CURSOR" ) != "show" && SDL_ShowCursor( -1 ) ) {
                     SDL_ShowCursor( SDL_DISABLE );
