@@ -28,6 +28,11 @@ bool active();
 // Toggle the 3D overlay on/off at runtime.
 void toggle();
 
+// Camera controls (no-ops while the layer is inactive).
+void rotate_yaw( float delta_deg );
+void adjust_pitch( float delta_deg );
+void adjust_zoom( float factor );
+
 // Draw the 3D view into the map-viewport rectangle, given in window pixel
 // coordinates with a top-left origin (the same space CDDA uses for windows).
 // `win_w`/`win_h` are the full drawable size in pixels (for the GL Y-flip).

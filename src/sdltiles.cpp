@@ -3111,11 +3111,28 @@ static void CheckMessages()
 #endif
                 is_repeat = ev.key.repeat;
 #if defined(CDDA_3D)
-                // cdda-3d: F10 toggles the 3D map overlay on/off (lets us compare
-                // the 3D view against the untouched 2D renderer at runtime).
-                if( ev.key.keysym.sym == SDLK_F10 && !ev.key.repeat ) {
-                    cdda3d::toggle();
-                    break;
+                // cdda-3d dev controls: F10 toggles the 3D map overlay; while it
+                // is active, F6/F7 rotate the camera and F8/F9 zoom. Keys are
+                // consumed only when handled so the rest pass through to the game.
+                if( !ev.key.repeat ) {
+                    const SDL_Keycode k3d = ev.key.keysym.sym;
+                    bool consumed = true;
+                    if( k3d == SDLK_F10 ) {
+                        cdda3d::toggle();
+                    } else if( cdda3d::active() && k3d == SDLK_F6 ) {
+                        cdda3d::rotate_yaw( -90.0f );
+                    } else if( cdda3d::active() && k3d == SDLK_F7 ) {
+                        cdda3d::rotate_yaw( 90.0f );
+                    } else if( cdda3d::active() && k3d == SDLK_F8 ) {
+                        cdda3d::adjust_zoom( 0.8f );
+                    } else if( cdda3d::active() && k3d == SDLK_F9 ) {
+                        cdda3d::adjust_zoom( 1.25f );
+                    } else {
+                        consumed = false;
+                    }
+                    if( consumed ) {
+                        break;
+                    }
                 }
 #endif
                 //hide mouse cursor on keyboard input
