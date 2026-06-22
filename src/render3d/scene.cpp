@@ -146,12 +146,12 @@ void build_draw_items( std::vector<DrawItem> &out )
                         id = m->type->id.str();
                         cat = TILE_CATEGORY::MONSTER;
                     } else if( const Character *cha = dynamic_cast<const Character *>( cr ) ) {
-                        if( cha->is_avatar() ) {
-                            id = cha->male ? "player_male" : "player_female";
-                        } else {
+                        // The avatar is drawn explicitly at the view center below
+                        // (creature_at does not reliably return it).
+                        if( !cha->is_avatar() ) {
                             id = cha->male ? "npc_male" : "npc_female";
+                            cat = TILE_CATEGORY::NONE;
                         }
-                        cat = TILE_CATEGORY::NONE;
                     }
                     if( !id.empty() ) {
                         DrawItem it;
@@ -166,6 +166,21 @@ void build_draw_items( std::vector<DrawItem> &out )
                     }
                 }
             }
+        }
+    }
+
+    // Always draw the avatar at the view center (it isn't reliably returned by
+    // creature_at, and the player should be unmistakably present).
+    {
+        DrawItem it;
+        it.wx = 0.0f;
+        it.wz = 0.0f;
+        it.bright = 1.0f;
+        const std::string pid = you.male ? "player_male" : "player_female";
+        if( resolve( pid, TILE_CATEGORY::NONE, lit_level::LIT, 0u, it ) ) {
+            it.kind = DrawKind::Billboard;
+            it.height = 1.0f;
+            out.push_back( it );
         }
     }
 }
