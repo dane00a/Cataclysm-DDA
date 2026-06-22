@@ -4,26 +4,33 @@
 
 #include <vector>
 
-// Builds the per-frame 3D geometry for the cdda-3d renderer by querying live
-// game state (map, avatar, visibility) and resolving each visible cell to its
-// terrain sprite via the tileset. Phase 3: textured ground cells.
+// Builds the per-frame 3D draw list for the cdda-3d renderer by querying live
+// game state (map, avatar, furniture, items, creatures, visibility) and
+// resolving each to a tileset sprite. Phase 4: floors, extruded walls, and
+// upright billboards for furniture/items/creatures/the player.
 
 namespace cdda3d
 {
 
-// One visible ground cell with its resolved terrain sprite.
-struct CellSprite {
+enum class DrawKind {
+    Floor,      // flat quad on the ground (y = 0)
+    Wall,       // extruded box (y = 0..height)
+    Billboard,  // upright, camera-facing quad
+};
+
+struct DrawItem {
     float wx = 0.0f;        // world position (player-relative), X = east
     float wz = 0.0f;        // world position (player-relative), Z = south
+    DrawKind kind = DrawKind::Floor;
     void *atlas = nullptr;  // SDL_Texture* of the sprite's atlas page (opaque here)
     int sx = 0, sy = 0, sw = 0, sh = 0; // source rect within the atlas (pixels)
     float bright = 1.0f;    // brightness tint from lighting/visibility
+    float height = 0.0f;    // world-unit height for Wall extrusion / Billboard
 };
 
-// Gather visible ground cells with their resolved terrain sprite. Cells with no
-// sprite (or never seen) are skipped. Player-relative coords -> camera looks at
-// the world origin.
-void build_ground_sprites( std::vector<CellSprite> &out );
+// Gather the visible cells' draw items (terrain floor/wall, furniture, items,
+// creatures). Player-relative coords -> camera looks at the world origin.
+void build_draw_items( std::vector<DrawItem> &out );
 
 } // namespace cdda3d
 
