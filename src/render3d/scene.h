@@ -26,6 +26,7 @@ struct DrawItem {
     int sx = 0, sy = 0, sw = 0, sh = 0; // source rect within the atlas (pixels)
     float bright = 1.0f;    // brightness tint from lighting/visibility
     float height = 0.0f;    // world-unit height for Wall extrusion / Billboard
+    float wy = 0.0f;        // world-unit base Y (z-level offset; player level = 0)
 };
 
 // Gather the visible cells' draw items (terrain floor/wall, furniture, items,

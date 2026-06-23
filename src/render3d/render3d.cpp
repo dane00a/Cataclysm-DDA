@@ -257,6 +257,8 @@ void render_map_viewport( int x, int y, int w, int h, int win_w, int win_h )
             const float t = it.bright;
             const float x0 = it.wx - 0.5f, x1 = it.wx + 0.5f;
             const float z0 = it.wz - 0.5f, z1 = it.wz + 0.5f;
+            const float yb = it.wy;            // z-level base height
+            const float yt = it.wy + it.height; // top of wall / billboard
 
             const auto vert = [&]( float vx, float vy, float vz, float u, float vv ) {
                 s_vertex_buf.push_back( vx );
@@ -282,29 +284,27 @@ void render_map_viewport( int x, int y, int w, int h, int win_w, int win_h )
 
             if( it.kind == DrawKind::Floor ) {
                 // ground quad, sprite top (v0) -> north (z0)
-                quad( x0, 0.0f, z0, u0, v0, x1, 0.0f, z0, u1, v0,
-                      x1, 0.0f, z1, u1, v1, x0, 0.0f, z1, u0, v1 );
+                quad( x0, yb, z0, u0, v0, x1, yb, z0, u1, v0,
+                      x1, yb, z1, u1, v1, x0, yb, z1, u0, v1 );
             } else if( it.kind == DrawKind::Wall ) {
-                const float hh = it.height;
                 // top face
-                quad( x0, hh, z0, u0, v0, x1, hh, z0, u1, v0,
-                      x1, hh, z1, u1, v1, x0, hh, z1, u0, v1 );
-                // side faces: bottom (y=0) -> v1, top (y=hh) -> v0
-                quad( x0, 0.0f, z0, u0, v1, x1, 0.0f, z0, u1, v1,
-                      x1, hh, z0, u1, v0, x0, hh, z0, u0, v0 );   // north
-                quad( x0, 0.0f, z1, u0, v1, x1, 0.0f, z1, u1, v1,
-                      x1, hh, z1, u1, v0, x0, hh, z1, u0, v0 );   // south
-                quad( x0, 0.0f, z0, u0, v1, x0, 0.0f, z1, u1, v1,
-                      x0, hh, z1, u1, v0, x0, hh, z0, u0, v0 );   // west
-                quad( x1, 0.0f, z0, u0, v1, x1, 0.0f, z1, u1, v1,
-                      x1, hh, z1, u1, v0, x1, hh, z0, u0, v0 );   // east
+                quad( x0, yt, z0, u0, v0, x1, yt, z0, u1, v0,
+                      x1, yt, z1, u1, v1, x0, yt, z1, u0, v1 );
+                // side faces: bottom (yb) -> v1, top (yt) -> v0
+                quad( x0, yb, z0, u0, v1, x1, yb, z0, u1, v1,
+                      x1, yt, z0, u1, v0, x0, yt, z0, u0, v0 );   // north
+                quad( x0, yb, z1, u0, v1, x1, yb, z1, u1, v1,
+                      x1, yt, z1, u1, v0, x0, yt, z1, u0, v0 );   // south
+                quad( x0, yb, z0, u0, v1, x0, yb, z1, u1, v1,
+                      x0, yt, z1, u1, v0, x0, yt, z0, u0, v0 );   // west
+                quad( x1, yb, z0, u0, v1, x1, yb, z1, u1, v1,
+                      x1, yt, z1, u1, v0, x1, yt, z0, u0, v0 );   // east
             } else { // Billboard: upright quad facing the camera
-                const float hh = it.height;
                 const float blx = it.wx - bb_rx * 0.5f, blz = it.wz - bb_rz * 0.5f;
                 const float brx = it.wx + bb_rx * 0.5f, brz = it.wz + bb_rz * 0.5f;
                 // top of sprite v0, bottom v1
-                quad( blx, hh, blz, u0, v0, brx, hh, brz, u1, v0,
-                      brx, 0.0f, brz, u1, v1, blx, 0.0f, blz, u0, v1 );
+                quad( blx, yt, blz, u0, v0, brx, yt, brz, u1, v0,
+                      brx, yb, brz, u1, v1, blx, yb, blz, u0, v1 );
             }
         }
         s_ground.upload( s_vertex_buf );
