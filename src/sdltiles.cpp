@@ -249,6 +249,12 @@ static bool SetupRenderTarget()
     if( printErrorIf( !display_buffer, "Failed to create window buffer" ) ) {
         return false;
     }
+#if defined(CDDA_3D)
+    // Blend the buffer when it is copied to the window, so the transparent map
+    // region (left by skipping the 2D world sprites while the 3D layer is active)
+    // reveals the 3D scene drawn underneath it. Opaque UI/overlays still cover it.
+    SDL_SetTextureBlendMode( display_buffer.get(), SDL_BLENDMODE_BLEND );
+#endif
     if( printErrorIf( SDL_SetRenderTarget( renderer.get(), display_buffer.get() ) != 0,
                       "SDL_SetRenderTarget failed" ) ) {
         return false;
@@ -576,6 +582,18 @@ void refresh_display()
     // there, present it, select the buffer as target again.
     SetRenderTarget( renderer, nullptr );
     ClearScreen();
+#if defined(CDDA_3D)
+    // Draw the cdda-3d map view FIRST, straight into the window's map rectangle,
+    // so the 2D UI (copied next) composites *over* it where the buffer is opaque
+    // and reveals the 3D where the map region is transparent. The pending 2D batch
+    // (the clear) is flushed first; our GL restores state before SDL resumes.
+    if( cdda3d::active() && cdda3d_viewport_rect.w > 0 && cdda3d_viewport_rect.h > 0 ) {
+        SDL_RenderFlush( renderer.get() );
+        cdda3d::render_map_viewport( cdda3d_viewport_rect.x, cdda3d_viewport_rect.y,
+                                     cdda3d_viewport_rect.w, cdda3d_viewport_rect.h,
+                                     WindowWidth, WindowHeight );
+    }
+#endif
 #if defined(__ANDROID__)
     SDL_Rect dstrect = get_android_render_rect( TERMINAL_WIDTH * fontwidth,
                        TERMINAL_HEIGHT * fontheight );
@@ -590,16 +608,6 @@ void refresh_display()
         draw_quick_shortcuts();
     }
     draw_virtual_joystick();
-#endif
-#if defined(CDDA_3D)
-    // Composite the cdda-3d map view under the 2D UI: SDL's 2D batch is on the
-    // window framebuffer now; flush it, then draw our GL into the map rectangle.
-    if( cdda3d::active() && cdda3d_viewport_rect.w > 0 && cdda3d_viewport_rect.h > 0 ) {
-        SDL_RenderFlush( renderer.get() );
-        cdda3d::render_map_viewport( cdda3d_viewport_rect.x, cdda3d_viewport_rect.y,
-                                     cdda3d_viewport_rect.w, cdda3d_viewport_rect.h,
-                                     WindowWidth, WindowHeight );
-    }
 #endif
     SDL_RenderPresent( renderer.get() );
     SetRenderTarget( renderer, display_buffer );

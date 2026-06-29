@@ -21,6 +21,10 @@
 #include <unordered_set>
 #include <variant>
 
+#if defined(CDDA_3D)
+#include "render3d/render3d.h"
+#endif
+
 #include "action.h"
 #include "avatar.h"
 #include "cached_options.h"
@@ -1350,7 +1354,21 @@ void cata_tiles::draw( const point &dest, const tripoint_bub_ms &center, int wid
                       "SDL_RenderSetClipRect failed" );
 
         //fill render area with black to prevent artifacts where no new pixels are drawn
-        geometry->rect( renderer, clipRect, SDL_Color() );
+#if defined(CDDA_3D)
+        if( cdda3d::active() ) {
+            // Punch a genuinely transparent hole (RGBA 0,0,0,0) instead of the
+            // usual opaque-black fill, so the 3D scene drawn underneath shows
+            // through after the buffer is blended onto the window. The default
+            // geometry renderer fills opaque, which would hide the 3D.
+            SDL_BlendMode prev_bm = SDL_BLENDMODE_NONE;
+            SDL_GetRenderDrawBlendMode( renderer.get(), &prev_bm );
+            SDL_SetRenderDrawBlendMode( renderer.get(), SDL_BLENDMODE_NONE );
+            SDL_SetRenderDrawColor( renderer.get(), 0, 0, 0, 0 );
+            SDL_RenderFillRect( renderer.get(), &clipRect );
+            SDL_SetRenderDrawBlendMode( renderer.get(), prev_bm );
+        } else
+#endif
+            geometry->rect( renderer, clipRect, SDL_Color() );
     }
 
     const point s = get_window_base_tile_counts( point( width, height ) );
@@ -1755,6 +1773,13 @@ void cata_tiles::draw( const point &dest, const tripoint_bub_ms &center, int wid
     // Start drawing from the lowest visible z-level (some off-screen tiles
     // are considered visible here to simplify the logic.)
     int cur_zlevel = std::max( center.z() - fov_3d_z_range, -OVERMAP_DEPTH );
+#if defined(CDDA_3D)
+    // When the 3D layer is active, skip the 2D world-sprite layers entirely so
+    // the map region of display_buffer stays transparent (cleared above) and the
+    // 3D view shows through. Overlays below (cursor, zones, sct, highlight, the
+    // pixel minimap) still draw on top.
+    if( !cdda3d::active() )
+#endif
     while( cur_zlevel <= center.z() ) {
         const half_open_rectangle<point> &cur_any_tile_range = is_isometric()
                 ? z_any_tile_range[center.z() - cur_zlevel] : top_any_tile_range;
